@@ -1223,13 +1223,13 @@ namespace {
         v->add_piece(ARCHBISHOP, 'a');
         v->add_piece(CHANCELLOR, 'm');
         v->add_piece(AMAZON, 'd'); // also called Dragon in Musketeer, but Amazon is the most accurate  
-        v->add_piece(CUSTOM_PIECE_1, 'l', "B2N"); // Leopard
-        v->add_piece(CUSTOM_PIECE_2, 'h', "ADGH"); // Hawk
-        v->add_piece(CUSTOM_PIECE_3, 'u', "NC"); // Unicorn
-        v->add_piece(CUSTOM_PIECE_4, 's', "B2ND"); // Spider
-        v->add_piece(CUSTOM_PIECE_5, 'f', "B3vND"); // Fortress
-        v->add_piece(CUSTOM_PIECE_6, 'e', "FWDA"); // Musketeer Elephant
-        v->add_piece(CUSTOM_PIECE_7, 'c', "FWDsN"); // Musketeer Cannon
+        v->add_piece(LEOPARD, 'l');
+        v->add_piece(HAWK, 'h');
+        v->add_piece(UNICORN, 'u');
+        v->add_piece(SPIDER, 's');
+        v->add_piece(FORTRESS, 'f');
+        v->add_piece(MUSKETEER_ELEPHANT, 'e');
+        v->add_piece(MUSKETEER_CANNON, 'c');
 
         //"********/rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR/******** w KQkq - 0 1"
         v->startFen = "lc******/rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR/LC****** w KQkq - 0 1";
