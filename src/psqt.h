@@ -29,7 +29,7 @@ namespace Stockfish::PSQT
 {
 
 extern Score psq[PIECE_NB][SQUARE_NB + 1];
-extern Score psq_gate[PIECE_NB][( FILE_NB + 1 ) * 2];
+extern Score psq_gate[PIECE_NB][FILE_NB + 1];
 
 // Fill psqt array from a set of internally linked parameters
 extern void init(const Variant*);
