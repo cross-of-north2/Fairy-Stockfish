@@ -352,7 +352,7 @@ private:
   // Other helpers
   void move_piece(Square from, Square to);
   template<bool Do>
-  void do_castling(Color us, Square from, Square& to, Square& rfrom, Square& rto, Key& k);
+  void do_castling(Color us, Square from, Square& to, Square& rfrom, Square& rto);
 
   // Data members
   Piece board[SQUARE_NB];
@@ -1579,13 +1579,11 @@ inline bool Position::can_drop(Color c, PieceType pt) const {
 
 inline void Position::commit_piece(Piece pc, File fl){
     committedGates[color_of(pc)][fl] = type_of(pc);
-    psq += PSQT::psq_gate[pc][fl];
 }
 
 inline PieceType Position::uncommit_piece(Color cl, File fl){
     PieceType committedPieceType = committedGates[cl][fl];
     committedGates[cl][fl] = NO_PIECE_TYPE;
-    psq -= PSQT::psq_gate[make_piece(cl, committedPieceType)][fl];
     return committedPieceType;
 }
 

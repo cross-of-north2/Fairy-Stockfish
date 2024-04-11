@@ -39,7 +39,6 @@ namespace Stockfish {
 namespace Zobrist {
 
   Key psq[PIECE_NB][SQUARE_NB];
-  Key psq_gate[PIECE_NB][FILE_NB];
   Key enpassant[FILE_NB];
   Key castling[CASTLING_RIGHT_NB];
   Key side, noPawns;
@@ -170,11 +169,6 @@ void Position::init() {
   for (Color c : {WHITE, BLACK})
       for (int n = 0; n < CHECKS_NB; ++n)
           Zobrist::checks[c][n] = rng.rand<Key>();
-
-  for (Color c : {WHITE, BLACK})
-      for (PieceType pt = PAWN; pt <= KING; ++pt)
-          for (File f = FILE_A; f <= FILE_MAX; ++f)
-              Zobrist::psq_gate[make_piece(c, pt)][f] = rng.rand<Key>();
 
   for (Color c : {WHITE, BLACK})
       for (PieceType pt = PAWN; pt <= KING; ++pt)
@@ -687,15 +681,6 @@ void Position::set_state(StateInfo* si) const {
 
           if (piece_drops() || seirawan_gating())
               si->key ^= Zobrist::inHand[pc][pieceCountInHand[c][pt]];
-      }
-
-  for (Color c : {WHITE, BLACK})
-      for (File f = FILE_A; f <= FILE_MAX; ++f)
-      {
-          PieceType pt = committedGates[c][f];
-          if (pt != NO_PIECE_TYPE){
-              si->key ^= Zobrist::psq_gate[make_piece(c, pt)][f];
-          }
       }
 
   if (check_counting())
@@ -1651,7 +1636,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
       assert(castling_rook_pieces(us) & type_of(captured));
 
       Square rfrom, rto;
-      do_castling<true>(us, from, to, rfrom, rto, k);
+      do_castling<true>(us, from, to, rfrom, rto);
 
       k ^= Zobrist::psq[captured][rfrom] ^ Zobrist::psq[captured][rto];
       captured = NO_PIECE;
@@ -2019,38 +2004,22 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   }
 
   // Musketeer gating
-  if (commit_gates()){
+  if(commit_gates()){
       {
           Rank r = rank_of(from);
-          File f = file_of(from);
-          Piece new_piece = NO_PIECE;
-          if (r == RANK_1 && has_committed_piece(WHITE, f)){
-              st->removedGatingType = drop_committed_piece(WHITE, f);
-              new_piece = make_piece(WHITE, st->removedGatingType);
-          } else if (r == max_rank() && has_committed_piece(BLACK, f)){
-              st->removedGatingType = drop_committed_piece(BLACK, f);
-              new_piece = make_piece(BLACK, st->removedGatingType);
-          }
-          if (new_piece != NO_PIECE){
-              k ^= Zobrist::psq[new_piece][from] ^ Zobrist::psq_gate[new_piece][f];
-              st->materialKey ^= Zobrist::psq[new_piece][pieceCount[new_piece] - 1];
-              st->nonPawnMaterial[us] += PieceValue[MG][new_piece];
+          if(r == RANK_1 && has_committed_piece(WHITE, file_of(from))){
+              st->removedGatingType = drop_committed_piece(WHITE, file_of(from));
+          } else if(r == max_rank() && has_committed_piece(BLACK, file_of(from))){
+              st->removedGatingType = drop_committed_piece(BLACK, file_of(from));
           }
       }
       if (captured) {
           // remove uncommitted musketeer piece if piece at the front row is captured
           Rank r = rank_of(to);
-          File f = file_of(to);
-          Piece removed_piece = NO_PIECE;
           if (r == RANK_1 && color_of(captured) == WHITE){
-              st->capturedGatingType = uncommit_piece(WHITE, f);
-              removed_piece = make_piece(WHITE, st->capturedGatingType);
+              st->capturedGatingType = uncommit_piece(WHITE, file_of(to));
           } else if (r == max_rank() && color_of(captured) == BLACK) {
-              st->capturedGatingType = uncommit_piece(BLACK, f);
-              removed_piece = make_piece(BLACK, st->capturedGatingType);
-          }
-          if (removed_piece != NO_PIECE){
-              k ^= Zobrist::psq_gate[removed_piece][f];
+              st->capturedGatingType = uncommit_piece(BLACK, file_of(to));
           }
       }
   }
@@ -2318,8 +2287,7 @@ void Position::undo_move(Move m) {
   if (type_of(m) == CASTLING)
   {
       Square rfrom, rto;
-      Key k = 0;
-      do_castling<false>(us, from, to, rfrom, rto, k);
+      do_castling<false>(us, from, to, rfrom, rto);
   }
   else
   {
@@ -2373,7 +2341,7 @@ void Position::undo_move(Move m) {
 /// Position::do_castling() is a helper used to do/undo a castling move. This
 /// is a bit tricky in Chess960 where from/to squares can overlap.
 template<bool Do>
-void Position::do_castling(Color us, Square from, Square& to, Square& rfrom, Square& rto, Key& k) {
+void Position::do_castling(Color us, Square from, Square& to, Square& rfrom, Square& rto) {
 
   bool kingSide = to > from;
   rfrom = to; // Castling is encoded as "king captures friendly rook"
@@ -2407,15 +2375,8 @@ void Position::do_castling(Color us, Square from, Square& to, Square& rfrom, Squ
   put_piece(castlingKingPiece, Do ? to : from);
   put_piece(castlingRookPiece, Do ? rto : rfrom);
 
-  if (Do && commit_gates()){
-      File f = file_of(rfrom);
-      if (has_committed_piece(us, f)){
-          st->removedCastlingGatingType = drop_committed_piece(us, f);
-          Piece new_piece = make_piece(us, st->removedCastlingGatingType);
-          k ^= Zobrist::psq[new_piece][rfrom] ^ Zobrist::psq_gate[new_piece][f];
-          st->materialKey ^= Zobrist::psq[new_piece][pieceCount[new_piece] - 1];
-          st->nonPawnMaterial[us] += PieceValue[MG][new_piece];
-      }
+  if (Do && commit_gates() && has_committed_piece(us, file_of(rfrom))) {
+      st->removedCastlingGatingType = drop_committed_piece(us, file_of(rfrom));
   }
 
 }
