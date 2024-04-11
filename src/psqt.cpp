@@ -349,7 +349,8 @@ namespace PSQT
 {
 
 Score psq[PIECE_NB][SQUARE_NB + 1];
-Score psq_gate[PIECE_NB][FILE_NB + 1];
+Score psq_gate_neg[PIECE_NB][FILE_NB + 1];
+Score psq_gate[PIECE_NB][(FILE_NB + 1)*2];
 
 // PSQT::init() initializes piece-square tables: the white halves of the tables are
 // copied from Bonus[] and PBonus[], adding the piece value, then the black halves of
@@ -515,8 +516,8 @@ void init(const Variant* v) {
       psq[ pc][SQ_NONE] = score + make_score(35, 10) * (1 + !isSlider);
       psq[~pc][SQ_NONE] = -psq[pc][SQ_NONE];
       for (File f = FILE_A; f <= FILE_MAX; ++f){
-          psq_gate[pc][f] = score;
-          psq_gate[~pc][f] = -psq_gate[pc][f];
+          psq_gate[pc][f] = score;;
+          psq_gate[~pc][~f] = -psq_gate[pc][f];
       }
   }
 }
